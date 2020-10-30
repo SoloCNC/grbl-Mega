@@ -27,6 +27,13 @@
 
 #ifndef defaults_h
 
+#ifdef ENABLE_BACKLASH_COMPENSATION
+  #define DEFAULT_X_BACKLASH                0.0    // mm
+  #define DEFAULT_Y_BACKLASH                0.0    // mm
+  #define DEFAULT_Z_BACKLASH                0.0    // mm
+#endif
+
+
 #ifdef DEFAULTS_GENERIC
   // Grbl generic default settings. Should work across different machines.
   #define DEFAULT_X_STEPS_PER_MM 250.0

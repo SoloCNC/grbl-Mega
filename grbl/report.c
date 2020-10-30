@@ -214,7 +214,10 @@ void report_grbl_settings() {
         case 1: report_util_float_setting(val+idx,settings.max_rate[idx],N_DECIMAL_SETTINGVALUE); break;
         case 2: report_util_float_setting(val+idx,settings.acceleration[idx]/(60*60),N_DECIMAL_SETTINGVALUE); break;
         case 3: report_util_float_setting(val+idx,-settings.max_travel[idx],N_DECIMAL_SETTINGVALUE); break;
-      }
+        #ifdef ENABLE_BACKLASH_COMPENSATION  
+          case 4: report_util_float_setting(val+idx,settings.backlash[idx],N_DECIMAL_SETTINGVALUE); break;
+        #endif
+        }
     }
     val += AXIS_SETTINGS_INCREMENT;
   }

@@ -393,6 +393,9 @@ void protocol_exec_rt_system()
           st_reset();
           gc_sync_position();
           plan_sync_position();
+          #ifdef ENABLE_BACKLASH_COMPENSATION
+            backlash_target_prev_sync_position();
+          #endif
         }
         if (sys.suspend & SUSPEND_SAFETY_DOOR_AJAR) { // Only occurs when safety door opens during jog.
           sys.suspend &= ~(SUSPEND_JOG_CANCEL);

@@ -63,4 +63,8 @@ void mc_parking_motion(float *parking_target, plan_line_data_t *pl_data);
 // Performs system reset. If in motion state, kills all motion and sets system alarm.
 void mc_reset();
 
+#ifdef ENABLE_BACKLASH_COMPENSATION
+  void backlash_target_prev_sync_position(); 
+#endif
+
 #endif

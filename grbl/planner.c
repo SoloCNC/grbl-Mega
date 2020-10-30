@@ -320,6 +320,9 @@ uint8_t plan_buffer_line(float *target, plan_line_data_t *pl_data)
   block->condition = pl_data->condition;
   block->spindle_speed = pl_data->spindle_speed;
   block->line_number = pl_data->line_number;
+  #ifdef ENABLE_BACKLASH_COMPENSATION
+  	block->backlash_motion = pl_data->backlash_motion;
+  #endif
 
   // Compute and store initial move distance data.
   int32_t target_steps[N_AXIS], position_steps[N_AXIS];
@@ -457,10 +460,19 @@ uint8_t plan_buffer_line(float *target, plan_line_data_t *pl_data)
     plan_compute_profile_parameters(block, nominal_speed, pl.previous_nominal_speed);
     pl.previous_nominal_speed = nominal_speed;
 
-    // Update previous path unit_vector and planner position.
-    memcpy(pl.previous_unit_vec, unit_vec, sizeof(unit_vec)); // pl.previous_unit_vec[] = unit_vec[]
-    memcpy(pl.position, target_steps, sizeof(target_steps)); // pl.position[] = target_steps[]
-
+    #ifdef ENABLE_BACKLASH_COMPENSATION
+      if(block->backlash_motion != 1)
+      {
+          // Update previous path unit_vector and planner position.
+          memcpy(pl.previous_unit_vec, unit_vec, sizeof(unit_vec)); 	// pl.previous_unit_vec[] = unit_vec[]
+          memcpy(pl.position, target_steps, sizeof(target_steps)); 	// pl.position[] = target_steps[]
+      }
+    #else
+      // Update previous path unit_vector and planner position.
+      memcpy(pl.previous_unit_vec, unit_vec, sizeof(unit_vec)); // pl.previous_unit_vec[] = unit_vec[]
+      memcpy(pl.position, target_steps, sizeof(target_steps)); // pl.position[] = target_steps[]
+    #endif
+    
     // New block is all set. Update buffer head and next buffer head indices.
     block_buffer_head = next_buffer_head;
     next_buffer_head = plan_next_block_index(block_buffer_head);
