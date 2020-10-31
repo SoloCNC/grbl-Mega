@@ -66,7 +66,7 @@ void mc_line(float *target, plan_line_data_t *pl_data)
   plan_line_data_t pl_backlash = {0};
   pl_backlash.feed_rate = pl_data->feed_rate;
   pl_backlash.spindle_speed = pl_data->spindle_speed;
-  pl_backlash.condition = PL_COND_FLAG_RAPID_MOTION; // Set rapid motion condition flag.
+  pl_backlash.condition = pl_data->condition;
   #ifdef USE_LINE_NUMBERS
     pl_backlash.line_number = pl_data->line_number;
   #endif
