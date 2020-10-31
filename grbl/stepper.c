@@ -90,6 +90,9 @@ typedef struct {
     uint8_t prescaler;      // Without AMASS, a prescaler is required to adjust for slow timing.
   #endif
   uint16_t spindle_pwm;
+  #ifdef ENABLE_BACKLASH_COMPENSATION
+    uint8_t backlash_motion;
+  #endif
 } segment_t;
 static segment_t segment_buffer[SEGMENT_BUFFER_SIZE];
 
@@ -576,15 +579,29 @@ ISR(TIMER1_COMPA_vect)
     if (st.counter_x > st.exec_block->step_event_count) {
       st.step_outbits[AXIS_1] |= (1<<STEP_BIT(AXIS_1));
       st.counter_x -= st.exec_block->step_event_count;
-      if (st.exec_block->direction_bits[AXIS_1] & (1<<DIRECTION_BIT(AXIS_1))) { sys_position[AXIS_1]--; }
-      else { sys_position[AXIS_1]++; }
+      #ifdef ENABLE_BACKLASH_COMPENSATION
+        if(st.exec_segment->backlash_motion == 0){
+          if (st.exec_block->direction_bits[X_AXIS] & (1<<DIRECTION_BIT(X_AXIS))) { sys_position[X_AXIS]--; }
+          else { sys_position[X_AXIS]++; }
+        }
+      #else
+        if (st.exec_block->direction_bits[X_AXIS] & (1<<DIRECTION_BIT(X_AXIS))) { sys_position[X_AXIS]--; }
+        else { sys_position[X_AXIS]++; }
+      #endif
     }
   #else
     if (st.counter_x > st.exec_block->step_event_count) {
       st.step_outbits |= (1<<X_STEP_BIT);
       st.counter_x -= st.exec_block->step_event_count;
-      if (st.exec_block->direction_bits & (1<<X_DIRECTION_BIT)) { sys_position[AXIS_1]--; }
-      else { sys_position[AXIS_1]++; }
+      #ifdef ENABLE_BACKLASH_COMPENSATION
+        if(st.exec_segment->backlash_motion == 0){
+          if (st.exec_block->direction_bits & (1<<X_DIRECTION_BIT)) { sys_position[X_AXIS]--; }
+          else { sys_position[X_AXIS]++; }
+        }
+      #else
+        if (st.exec_block->direction_bits & (1<<X_DIRECTION_BIT)) { sys_position[X_AXIS]--; }
+        else { sys_position[X_AXIS]++; }
+      #endif
     }
   #endif // Ramps Board
 
@@ -597,15 +614,29 @@ ISR(TIMER1_COMPA_vect)
     if (st.counter_y > st.exec_block->step_event_count) {
       st.step_outbits[AXIS_2] |= (1<<STEP_BIT(AXIS_2));
       st.counter_y -= st.exec_block->step_event_count;
-      if (st.exec_block->direction_bits[AXIS_2] & (1<<DIRECTION_BIT(AXIS_2))) { sys_position[AXIS_2]--; }
-      else { sys_position[AXIS_2]++; }
+      #ifdef ENABLE_BACKLASH_COMPENSATION
+        if(st.exec_segment->backlash_motion == 0){
+          if (st.exec_block->direction_bits[Y_AXIS] & (1<<DIRECTION_BIT(Y_AXIS))) { sys_position[Y_AXIS]--; }
+          else { sys_position[Y_AXIS]++; }
+        }
+      #else
+        if (st.exec_block->direction_bits[Y_AXIS] & (1<<DIRECTION_BIT(Y_AXIS))) { sys_position[Y_AXIS]--; }
+        else { sys_position[Y_AXIS]++; }
+      #endif
     }
   #else
     if (st.counter_y > st.exec_block->step_event_count) {
       st.step_outbits |= (1<<Y_STEP_BIT);
       st.counter_y -= st.exec_block->step_event_count;
-      if (st.exec_block->direction_bits & (1<<Y_DIRECTION_BIT)) { sys_position[AXIS_2]--; }
-      else { sys_position[AXIS_2]++; }
+      #ifdef ENABLE_BACKLASH_COMPENSATION
+        if(st.exec_segment->backlash_motion == 0){
+          if (st.exec_block->direction_bits & (1<<Y_DIRECTION_BIT)) { sys_position[Y_AXIS]--; }
+          else { sys_position[Y_AXIS]++; }
+        }
+      #else
+        if (st.exec_block->direction_bits & (1<<Y_DIRECTION_BIT)) { sys_position[Y_AXIS]--; }
+        else { sys_position[Y_AXIS]++; }
+      #endif
     }
   #endif // Ramps Board
   #ifdef ADAPTIVE_MULTI_AXIS_STEP_SMOOTHING
@@ -617,15 +648,29 @@ ISR(TIMER1_COMPA_vect)
     if (st.counter_z > st.exec_block->step_event_count) {
       st.step_outbits[AXIS_3] |= (1<<STEP_BIT(AXIS_3));
       st.counter_z -= st.exec_block->step_event_count;
-      if (st.exec_block->direction_bits[AXIS_3] & (1<<DIRECTION_BIT(AXIS_3))) { sys_position[AXIS_3]--; }
-      else { sys_position[AXIS_3]++; }
+      #ifdef ENABLE_BACKLASH_COMPENSATION
+        if(st.exec_segment->backlash_motion == 0){
+          if (st.exec_block->direction_bits[Z_AXIS] & (1<<DIRECTION_BIT(Z_AXIS))) { sys_position[Z_AXIS]--; }
+          else { sys_position[Z_AXIS]++; }
+        }
+      #else
+        if (st.exec_block->direction_bits[Z_AXIS] & (1<<DIRECTION_BIT(Z_AXIS))) { sys_position[Z_AXIS]--; }
+        else { sys_position[Z_AXIS]++; }
+      #endif
     }
   #else
     if (st.counter_z > st.exec_block->step_event_count) {
       st.step_outbits |= (1<<Z_STEP_BIT);
       st.counter_z -= st.exec_block->step_event_count;
-      if (st.exec_block->direction_bits & (1<<Z_DIRECTION_BIT)) { sys_position[AXIS_3]--; }
-      else { sys_position[AXIS_3]++; }
+      #ifdef ENABLE_BACKLASH_COMPENSATION
+        if(st.exec_segment->backlash_motion == 0){
+          if (st.exec_block->direction_bits & (1<<Z_DIRECTION_BIT)) { sys_position[Z_AXIS]--; }
+          else { sys_position[Z_AXIS]++; }
+        }
+      #else
+        if (st.exec_block->direction_bits & (1<<Z_DIRECTION_BIT)) { sys_position[Z_AXIS]--; }
+        else { sys_position[Z_AXIS]++; }
+      #endif
     }
   #endif // Ramps Board
   #if N_AXIS > 3
@@ -764,7 +809,10 @@ void st_generate_step_dir_invert_masks()
   #ifdef DEFAULTS_RAMPS_BOARD
     for (idx=0; idx<N_AXIS; idx++) {
       if (bit_istrue(settings.step_invert_mask,bit(idx))) { step_port_invert_mask[idx] = get_step_pin_mask(idx); }
+      else { step_port_invert_mask[idx] = 0; }
+
       if (bit_istrue(settings.dir_invert_mask,bit(idx))) { dir_port_invert_mask[idx] = get_direction_pin_mask(idx); }
+      else { dir_port_invert_mask[idx] = 0; }
     }
   #else
     step_port_invert_mask = 0;
@@ -1152,6 +1200,9 @@ void st_prep_buffer()
 
     // Set new segment to point to the current segment data block.
     prep_segment->st_block_index = prep.st_block_index;
+    #ifdef ENABLE_BACKLASH_COMPENSATION
+  		prep_segment->backlash_motion = pl_block->backlash_motion;
+    #endif
 
     /*------------------------------------------------------------------------------------
         Compute the average velocity of this new segment by determining the total distance
