@@ -31,17 +31,30 @@
 
 // Version of the EEPROM data. Will be used to migrate existing data from older versions of Grbl
 // when firmware is upgraded. Always stored in byte 0 of eeprom
-#define SETTINGS_VERSION 10  // NOTE: Check settings_reset() when moving to next version.
+#ifdef ENABLE_BACKLASH_COMPENSATION
+  #define SETTINGS_VERSION 11  // NOTE: Check settings_reset() when moving to next version.
+#else 
+  #define SETTINGS_VERSION 10  // NOTE: Check settings_reset() when moving to next version.
+#endif
 
 // Define bit flag masks for the boolean settings in settings.flag.
-#define BITFLAG_REPORT_INCHES      bit(0)
-#define BITFLAG_LASER_MODE         bit(1)
-#define BITFLAG_INVERT_ST_ENABLE   bit(2)
-#define BITFLAG_HARD_LIMIT_ENABLE  bit(3)
-#define BITFLAG_HOMING_ENABLE      bit(4)
-#define BITFLAG_SOFT_LIMIT_ENABLE  bit(5)
-#define BITFLAG_INVERT_LIMIT_PINS  bit(6)
-#define BITFLAG_INVERT_PROBE_PIN   bit(7)
+#define BIT_REPORT_INCHES      0
+#define BIT_LASER_MODE         1
+#define BIT_INVERT_ST_ENABLE   2
+#define BIT_HARD_LIMIT_ENABLE  3
+#define BIT_HOMING_ENABLE      4
+#define BIT_SOFT_LIMIT_ENABLE  5
+#define BIT_INVERT_LIMIT_PINS  6
+#define BIT_INVERT_PROBE_PIN   7
+
+#define BITFLAG_REPORT_INCHES      bit(BIT_REPORT_INCHES)
+#define BITFLAG_LASER_MODE         bit(BIT_LASER_MODE)
+#define BITFLAG_INVERT_ST_ENABLE   bit(BIT_INVERT_ST_ENABLE)
+#define BITFLAG_HARD_LIMIT_ENABLE  bit(BIT_HARD_LIMIT_ENABLE)
+#define BITFLAG_HOMING_ENABLE      bit(BIT_HOMING_ENABLE)
+#define BITFLAG_SOFT_LIMIT_ENABLE  bit(BIT_SOFT_LIMIT_ENABLE)
+#define BITFLAG_INVERT_LIMIT_PINS  bit(BIT_INVERT_LIMIT_PINS)
+#define BITFLAG_INVERT_PROBE_PIN   bit(BIT_INVERT_PROBE_PIN)
 
 // Define status reporting boolean enable bit flags in settings.status_report_mask
 #define BITFLAG_RT_STATUS_POSITION_TYPE     bit(0)
@@ -71,7 +84,11 @@
 // #define SETTING_INDEX_G92    N_COORDINATE_SYSTEM+2  // Coordinate offset (G92.2,G92.3 not supported)
 
 // Define Grbl axis settings numbering scheme. Starts at START_VAL, every INCREMENT, over N_SETTINGS.
-#define AXIS_N_SETTINGS          4
+#ifdef ENABLE_BACKLASH_COMPENSATION
+  #define AXIS_N_SETTINGS          5
+#else
+  #define AXIS_N_SETTINGS          4
+#endif
 #define AXIS_SETTINGS_START_VAL  100 // NOTE: Reserving settings values >= 100 for axis settings. Up to 255.
 #define AXIS_SETTINGS_INCREMENT  10  // Must be greater than the number of axis settings
 
@@ -82,6 +99,9 @@ typedef struct {
   float max_rate[N_AXIS];
   float acceleration[N_AXIS];
   float max_travel[N_AXIS];
+  #ifdef ENABLE_BACKLASH_COMPENSATION
+    float backlash[N_AXIS];
+  #endif
 
   // Remaining Grbl settings
   uint8_t pulse_microseconds;

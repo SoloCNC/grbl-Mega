@@ -23,6 +23,13 @@
 #include "grbl.h"
 
 
+#ifdef ENABLE_BACKLASH_COMPENSATION
+  static uint8_t dir_negative[N_AXIS] = {0};
+  void backlash_target_prev_sync_position(){
+    system_convert_array_steps_to_mpos(target_prev, sys_position);
+  }
+#endif
+
 // Execute linear motion in absolute millimeter coordinates. Feed rate given in millimeters/second
 // unless invert_feed_rate is true. Then the feed_rate means that the motion should be completed in
 // (1 minute)/feed_rate time.
@@ -55,6 +62,70 @@ void mc_line(float *target, plan_line_data_t *pl_data)
   // indicates to Grbl what is a backlash compensation motion, so that Grbl executes the move but
   // doesn't update the machine position values. Since the position values used by the g-code
   // parser and planner are separate from the system machine positions, this is doable.
+#ifdef ENABLE_BACKLASH_COMPENSATION
+  plan_line_data_t pl_backlash = {0};
+  pl_backlash.feed_rate = pl_data->feed_rate;
+  pl_backlash.spindle_speed = pl_data->spindle_speed;
+  pl_backlash.condition = PL_COND_FLAG_RAPID_MOTION; // Set rapid motion condition flag.
+  #ifdef USE_LINE_NUMBERS
+    pl_backlash.line_number = pl_data->line_number;
+  #endif
+  pl_backlash.backlash_motion = 1;
+  uint8_t backlash_update = 0;
+
+  for(uint8_t i = 0; i < N_AXIS; i++)
+  {
+      // Move positive?
+      if(target[i] > target_prev[i])
+      {
+          // Last move negative?
+          if(dir_negative[i] == 1)
+          {
+              dir_negative[i] = 0;
+              target_prev[i] += settings.backlash[i];
+              backlash_update = 1;
+          }
+      }
+      // Move negative?
+      else if(target[i] < target_prev[i])
+      {
+          // Last move positive?
+          if(dir_negative[i] == 0)
+          {
+              dir_negative[i] = 1;
+              target_prev[i] -= settings.backlash[i];
+              backlash_update = 1;
+          }
+      }
+  }
+  // Perform backlash move if necessary
+  if(backlash_update)
+  {
+    // Backlash move needs a slot in planner buffer, so we have to check again, if planner is free
+    // If the buffer is full: good! That means we are well ahead of the robot.
+    // Remain in this loop until there is room in the buffer.
+    do {
+      protocol_execute_realtime(); // Check for any run-time commands
+      if (sys.abort) { return; } // Bail, if system abort.
+      if ( plan_check_full_buffer() ) { protocol_auto_cycle_start(); } // Auto-cycle start when buffer is full.
+      else { break; }
+    } while (1);
+    // Plan and queue motion into planner buffer
+    if (plan_buffer_line(target_prev, &pl_backlash) == PLAN_EMPTY_BLOCK) {
+      if (bit_istrue(settings.flags,BITFLAG_LASER_MODE)) {
+        // Correctly set spindle state, if there is a coincident position passed. Forces a buffer
+        // sync while in M3 laser mode only.
+        if (pl_data->condition & PL_COND_FLAG_SPINDLE_CW) {
+          spindle_sync(PL_COND_FLAG_SPINDLE_CW, pl_data->spindle_speed);
+        }
+      }
+    }
+    // if(dir_negative[1]==1) printString("bc+");
+    // else printString("bc-");
+    // printFloat(settings.backlash[1], 3);
+  }
+  memcpy(target_prev, target, N_AXIS*sizeof(float));
+#endif
 
   // If the buffer is full: good! That means we are well ahead of the robot.
   // Remain in this loop until there is room in the buffer.
@@ -398,6 +469,9 @@ void mc_homing_cycle(uint8_t cycle_mask)
   // Sync gcode parser and planner positions to homed position.
   gc_sync_position();
   plan_sync_position();
+  #ifdef ENABLE_BACKLASH_COMPENSATION
+    backlash_target_prev_sync_position();
+  #endif
 
   // If hard limits feature enabled, re-enable hard limits pin change register after homing cycle.
   limits_init();
@@ -460,6 +534,9 @@ uint8_t mc_probe_cycle(float *target, plan_line_data_t *pl_data, uint8_t parser_
   st_reset(); // Reset step segment buffer.
   plan_reset(); // Reset planner buffer. Zero planner positions. Ensure probing motion is cleared.
   plan_sync_position(); // Sync planner position to current machine position.
+  #ifdef ENABLE_BACKLASH_COMPENSATION
+    backlash_target_prev_sync_position();
+  #endif
 
   #ifdef MESSAGE_PROBE_COORDINATES
     // All done! Output the probe position as message.
